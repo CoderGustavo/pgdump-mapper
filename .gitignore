@@ -1,9 +1,6 @@
 # Binaries
 /bin/
 
-# Compiled package objects
-/pkg/
-
 # Data
 /data/
 
