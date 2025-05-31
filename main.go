@@ -6,11 +6,20 @@ import (
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
 	errors "github.com/hedibertosilva/pgdump-mapper/internal/cli/errors"
+	file "github.com/hedibertosilva/pgdump-mapper/internal/file"
+
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
 func argsSanityCheck(args []string) error {
-	argsLength := len(args)
+	numOptions := 0
+	for _, arg := range args {
+		if models.ValidOptions[arg] {
+			numOptions += 1
+		}
+	}
+
+	argsLength := len(args) - numOptions
 	if argsLength == 0 {
 		return fmt.Errorf(errors.ErrorNoInputFile)
 	} else if argsLength > 1 {
@@ -20,7 +29,7 @@ func argsSanityCheck(args []string) error {
 	return nil
 }
 
-func fileSanityCheck(file string) error {
+func inputSanityCheck(file string) error {
 	fileInfo, err := os.Stat(file)
 	if err != nil {
 		return fmt.Errorf(errors.ErrNoSuchFile)
@@ -36,9 +45,11 @@ func fileSanityCheck(file string) error {
 func main() {
 	defer os.Exit(0)
 
-	var opts = models.Options{}
 	var args = os.Args[1:]
-	cli.HandleOptions(args, &opts)
+	var opts = models.Options{}
+
+	cli.Options = &opts
+	cli.HandleOptions(args)
 
 	if opts.Help {
 		msg := cli.HelpContent
@@ -49,11 +60,14 @@ func main() {
 		cli.ReturnError(err)
 	}
 
-	file := os.Args[1]
-	if err := fileSanityCheck(file); err != nil {
+	input := os.Args[1]
+	if err := inputSanityCheck(input); err != nil {
 		cli.ReturnError(err)
 	}
 
-	fmt.Println("Loading", file)
-	fmt.Println("Load completed")
+	file.Input = &input
+	file.Options = opts
+
+	file.Read()
+	file.Export()
 }

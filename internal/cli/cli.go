@@ -7,14 +7,15 @@ import (
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
-func HandleOptions(args []string, opts *models.Options) bool {
-	hasOptions := false
+var Options *models.Options
 
+func HandleOptions(args []string) bool {
+	hasOptions := false
 	mapOptions := map[string]*bool{
-		"--help": &opts.Help,
-		"-h":     &opts.Help,
-		"--raw":  &opts.Raw,
-		"-r":     &opts.Raw,
+		"--help": &Options.Help,
+		"-h":     &Options.Help,
+		"--raw":  &Options.Raw,
+		"-r":     &Options.Raw,
 	}
 
 	for _, arg := range args {
