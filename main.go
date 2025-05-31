@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"os"
 
-	cmd "github.com/hedibertosilva/pgdump-mapper/cmd"
-	consts "github.com/hedibertosilva/pgdump-mapper/constants"
-	structs "github.com/hedibertosilva/pgdump-mapper/structures"
+	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	errors "github.com/hedibertosilva/pgdump-mapper/internal/cli/errors"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
 func argsSanityCheck(args []string) error {
 	argsLength := len(args)
 	if argsLength == 0 {
-		return fmt.Errorf(consts.ErrorNoInputFile)
+		return fmt.Errorf(errors.ErrorNoInputFile)
 	} else if argsLength > 1 {
-		return fmt.Errorf(consts.ErrorManyArgs)
+		return fmt.Errorf(errors.ErrorManyArgs)
 	}
 
 	return nil
@@ -23,36 +23,35 @@ func argsSanityCheck(args []string) error {
 func fileSanityCheck(file string) error {
 	fileInfo, err := os.Stat(file)
 	if err != nil {
-		return fmt.Errorf(consts.ErrNoSuchFile)
+		return fmt.Errorf(errors.ErrNoSuchFile)
 	}
 
 	if mode := fileInfo.Mode(); mode.IsDir() {
-		return fmt.Errorf(consts.ErrIsDirectory)
+		return fmt.Errorf(errors.ErrIsDirectory)
 	}
 
 	return nil
 }
 
 func main() {
-
 	defer os.Exit(0)
 
-	var options = structs.Options{}
+	var opts = models.Options{}
 	var args = os.Args[1:]
+	cli.HandleOptions(args, &opts)
 
-	cmd.HandleOptions(args, &options)
-
-	if options.Help {
-		cmd.ReturnSuccess(consts.HelpContent)
+	if opts.Help {
+		msg := cli.HelpContent
+		cli.ReturnSuccess(msg)
 	}
 
 	if err := argsSanityCheck(args); err != nil {
-		cmd.ReturnError(err)
+		cli.ReturnError(err)
 	}
 
 	file := os.Args[1]
 	if err := fileSanityCheck(file); err != nil {
-		cmd.ReturnError(err)
+		cli.ReturnError(err)
 	}
 
 	fmt.Println("Loading", file)

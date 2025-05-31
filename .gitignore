@@ -3,6 +3,7 @@
 
 # Data
 /data/
+/testdata
 
 # Temporary Go build files
 *.o

@@ -1,20 +1,20 @@
-package cmd
+package cli
 
 import (
 	"fmt"
 	"os"
 
-	structs "github.com/hedibertosilva/pgdump-mapper/structures"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
-func HandleOptions(args []string, options *structs.Options) bool {
+func HandleOptions(args []string, opts *models.Options) bool {
 	hasOptions := false
 
 	mapOptions := map[string]*bool{
-		"--help": &options.Help,
-		"-h":     &options.Help,
-		"--raw":  &options.Raw,
-		"-r":     &options.Raw,
+		"--help": &opts.Help,
+		"-h":     &opts.Help,
+		"--raw":  &opts.Raw,
+		"-r":     &opts.Raw,
 	}
 
 	for _, arg := range args {

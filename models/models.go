@@ -1,4 +1,4 @@
-package structures
+package models
 
 type Options struct {
 	Help bool
