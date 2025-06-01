@@ -5,9 +5,9 @@ type Options struct {
 	Raw  bool
 }
 
-var ValidOptions = map[string]bool{
-	"--help": true,
-	"-h":     true,
+var DefaultOptions = map[string]bool{
+	"--help": false,
+	"-h":     false,
 	"--raw":  true,
 	"-r":     true,
 }

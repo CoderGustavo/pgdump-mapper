@@ -14,7 +14,7 @@ import (
 func argsSanityCheck(args []string) error {
 	numOptions := 0
 	for _, arg := range args {
-		if models.ValidOptions[arg] {
+		if models.DefaultOptions[arg] {
 			numOptions += 1
 		}
 	}
@@ -29,13 +29,13 @@ func argsSanityCheck(args []string) error {
 	return nil
 }
 
-func inputSanityCheck(file string) error {
-	fileInfo, err := os.Stat(file)
+func inputSanityCheck(input string) error {
+	inputInfo, err := os.Stat(input)
 	if err != nil {
 		return fmt.Errorf(errors.ErrNoSuchFile)
 	}
 
-	if mode := fileInfo.Mode(); mode.IsDir() {
+	if mode := inputInfo.Mode(); mode.IsDir() {
 		return fmt.Errorf(errors.ErrIsDirectory)
 	}
 
