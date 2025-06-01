@@ -8,10 +8,6 @@ import (
 	"regexp"
 	"strings"
 
-	// "regexp"
-	// "strings"
-	// "text/scanner"
-
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
@@ -28,16 +24,16 @@ var Options models.Options
 //		"columns":     map[string]string{},
 //		"values":      [][]string{},
 //		"primary_key": "",
-//		"foreign_key": map[string]string{},
+//		"foreign_key": []map[string]string{},
 // }
 //
 
 func parseCopy(line string, tbl *map[string]interface{}) {
 	reData := regexp.MustCompile(`([^\t]+)`)
-	var columns []string = (*tbl)["columns"].([]string)
-	var numColumns int = len(columns)
-	var values []string = reData.FindAllString(line, -1)
-	var numValues int = len(values)
+	columns := (*tbl)["columns"].([]string)
+	numColumns := len(columns)
+	values := reData.FindAllString(line, -1)
+	numValues := len(values)
 
 	if numValues == numColumns {
 		data := make(map[string]string)
@@ -57,15 +53,35 @@ func parseCopy(line string, tbl *map[string]interface{}) {
 }
 
 func parsePKey(line string) string {
-	// Get Primary Key
-	rePKey := regexp.MustCompile(`ADD CONSTRAINT (\w+) PRIMARY KEY \((\w+)\);`)
-	matchPKey := rePKey.FindStringSubmatch(line)
-
-	if len(matchPKey) == 3 {
-		return matchPKey[2]
+	re := regexp.MustCompile(`ADD CONSTRAINT (\w+) PRIMARY KEY \((\w+)\);`)
+	match := re.FindStringSubmatch(line)
+	if len(match) == 3 {
+		// It's expected 3 elements:
+		// [0] Original line
+		// [1] PKey name
+		// [2] Pkey column
+		return match[2]
 	}
-
 	return ""
+}
+
+func parseFKey(line string) map[string]string {
+	re := regexp.MustCompile(`ADD CONSTRAINT (\w+) FOREIGN KEY \((\w+)\) REFERENCES (\w+).(\w+)\((\w+)\)`)
+	match := re.FindStringSubmatch(line)
+	if len(match) == 6 {
+		// It's expected 6 elements:
+		// [0] Original line
+		// [1] FKey name
+		// [2] From column
+		// [3] Target schema
+		// [4] Target table
+		// [5] Target column
+		return map[string]string{
+			"from":   match[2],
+			"target": match[3] + "." + match[4] + "." + match[5],
+		}
+	}
+	return nil
 }
 
 func findTable(allTables []map[string]interface{}, tmpAlterTable map[string]string) (*map[string]interface{}, bool) {
@@ -85,11 +101,15 @@ func Read() {
 	}
 	defer file.Close()
 
-	var currentTable map[string]interface{}
-	var allTables []map[string]interface{}
-	var tmpAlterTable map[string]string
-	found := false
+	var (
+		currentTable  map[string]interface{}
+		allTables     []map[string]interface{}
+		tmpAlterTable map[string]string
+	)
+
 	state := "IDLE"
+	foundTable := false
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -106,12 +126,17 @@ func Read() {
 			reMetadata := regexp.MustCompile(`COPY (\w+)\.(\w+) \((.+)\) FROM stdin;`)
 			metadata := reMetadata.FindStringSubmatch(line)
 			if len(metadata) == 4 {
+				// It's expected 4 elements:
+				// [0] Original line
+				// [1] Schema
+				// [2] Table
+				// [3] Columns
 				targetTable := map[string]string{
 					"name":   metadata[2],
 					"schema": metadata[1],
 				}
 				if objTable, exist := findTable(allTables, targetTable); exist {
-					found = true
+					foundTable = true
 					currentTable = *objTable
 					currentTable["columns"] = strings.Split(metadata[3], ", ")
 				} else {
@@ -124,10 +149,10 @@ func Read() {
 			}
 			parseCopy(line, &currentTable)
 			if strings.HasPrefix(line, "\\.") {
-				if !found {
+				if !foundTable {
 					allTables = append(allTables, currentTable)
 				} else {
-					found = false
+					foundTable = false
 				}
 				currentTable = make(map[string]interface{})
 				state = "IDLE"
@@ -138,6 +163,10 @@ func Read() {
 			reAlterTable := regexp.MustCompile(`ALTER TABLE ONLY (\w+)\.(\w+)`)
 			matchAlterTable := reAlterTable.FindStringSubmatch(line)
 			if len(matchAlterTable) == 3 {
+				// It's expected 3 elements:
+				// [0] Original line
+				// [1] Schema.
+				// [2] Table
 				tmpAlterTable = map[string]string{
 					"schema": matchAlterTable[1],
 					"name":   matchAlterTable[2],
@@ -156,6 +185,24 @@ func Read() {
 				}
 				state = "IDLE"
 			}
+			if fkey := parseFKey(line); fkey != nil {
+				fkeys := []map[string]string{}
+				if objTable, exist := findTable(allTables, tmpAlterTable); exist {
+					if objFkeys, exist := (*objTable)["foreign_key"]; exist {
+						(*objTable)["foreign_key"] = append(objFkeys.([]map[string]string), fkey)
+					} else {
+						(*objTable)["foreign_key"] = append(fkeys, fkey)
+					}
+				} else {
+					currentTable = map[string]interface{}{
+						"name":        tmpAlterTable["name"],
+						"schema":      tmpAlterTable["schema"],
+						"foreign_key": append(fkeys, fkey),
+					}
+					allTables = append(allTables, currentTable)
+				}
+				state = "IDLE"
+			}
 		}
 
 	}
@@ -165,5 +212,5 @@ func Read() {
 }
 
 func Export() {
-	fmt.Println("exporting", *Input)
+	fmt.Println("Exporting", *Input)
 }
