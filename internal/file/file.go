@@ -4,9 +4,12 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"html/template"
 	"os"
 	"regexp"
 	"strings"
+
+	yaml "gopkg.in/yaml.v3"
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
@@ -15,23 +18,24 @@ import (
 // Table Template:
 //
 //  map[string]interface{}{
-//		"name":        "",
-//		"schema":      "",
-//		"data":        []map[string]string{},
-//		"columns":     map[string]string{},
-//		"values":      [][]string{},
-//		"primary_key": "",
-//		"foreign_key": []map[string]string{},
+// 		"name":        "",
+// 		"schema":      "",
+// 		"data":        []map[string]string{},
+// 		"columns":     map[string]string{},
+// 		"values":      [][]string{},
+// 		"primary_key": "",
+// 		"foreign_key": []map[string]string{},
 // }
 
 var (
-	Input   *string
-	Options models.Options
+	Input     *string
+	Options   models.Options
+	AllTables []map[string]interface{}
 )
 
-func findTable(allTables []map[string]interface{},
+func findTable(AllTables []map[string]interface{},
 	cacheAlterTable map[string]string) (*map[string]interface{}, bool) {
-	for _, table := range allTables {
+	for _, table := range AllTables {
 		if table["name"] == cacheAlterTable["name"] &&
 			table["schema"] == cacheAlterTable["schema"] {
 			return &table, true
@@ -49,7 +53,6 @@ func Read() {
 
 	var (
 		currentTable    map[string]interface{}
-		allTables       []map[string]interface{}
 		cacheAlterTable map[string]string
 	)
 
@@ -81,7 +84,7 @@ func Read() {
 					"name":   metadata[2],
 					"schema": metadata[1],
 				}
-				if objTable, exist := findTable(allTables, targetTable); exist {
+				if objTable, exist := findTable(AllTables, targetTable); exist {
 					foundTable = true
 					currentTable = *objTable
 					currentTable["columns"] = strings.Split(metadata[3], ", ")
@@ -92,16 +95,17 @@ func Read() {
 						"columns": strings.Split(metadata[3], ", "),
 					}
 				}
-			}
-			parseCopy(line, &currentTable)
-			if strings.HasPrefix(line, "\\.") {
-				if !foundTable {
-					allTables = append(allTables, currentTable)
-				} else {
-					foundTable = false
+			} else {
+				parseCopy(line, &currentTable)
+				if strings.HasPrefix(line, "\\.") {
+					if !foundTable {
+						AllTables = append(AllTables, currentTable)
+					} else {
+						foundTable = false
+					}
+					currentTable = make(map[string]interface{})
+					state = "IDLE"
 				}
-				currentTable = make(map[string]interface{})
-				state = "IDLE"
 			}
 		}
 
@@ -119,7 +123,7 @@ func Read() {
 				}
 			}
 			if pkey := parsePKey(line); pkey != "" {
-				if objTable, exist := findTable(allTables, cacheAlterTable); exist {
+				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					(*objTable)["primary_key"] = pkey
 				} else {
 					currentTable = map[string]interface{}{
@@ -127,13 +131,13 @@ func Read() {
 						"schema":      cacheAlterTable["schema"],
 						"primary_key": pkey,
 					}
-					allTables = append(allTables, currentTable)
+					AllTables = append(AllTables, currentTable)
 				}
 				state = "IDLE"
 			}
 			if fkey := parseFKey(line); fkey != nil {
 				fkeys := []map[string]string{}
-				if objTable, exist := findTable(allTables, cacheAlterTable); exist {
+				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					if objFkeys, exist := (*objTable)["foreign_key"]; exist {
 						(*objTable)["foreign_key"] = append(objFkeys.([]map[string]string), fkey)
 					} else {
@@ -145,18 +149,47 @@ func Read() {
 						"schema":      cacheAlterTable["schema"],
 						"foreign_key": append(fkeys, fkey),
 					}
-					allTables = append(allTables, currentTable)
+					AllTables = append(AllTables, currentTable)
 				}
 				state = "IDLE"
 			}
 		}
 
 	}
-	j, _ := json.Marshal(allTables)
-	fmt.Println(string(j))
-
 }
 
 func Export() {
-	fmt.Println("Exporting", *Input)
+	if Options.Json {
+		j, _ := json.Marshal(AllTables)
+		fmt.Println(string(j))
+	}
+	if Options.Yaml {
+		out, err := yaml.Marshal(AllTables)
+		if err != nil {
+			cli.ReturnError(err)
+		}
+		fmt.Println(string(out))
+	}
+	if Options.Html {
+		// Parse template
+		tmpl, err := template.New("index").Parse(htmlTemplate)
+		if err != nil {
+			cli.ReturnError(err)
+		}
+
+		// Create output file
+		outputFile, err := os.Create("index.html")
+		if err != nil {
+			cli.ReturnError(err)
+		}
+		defer outputFile.Close()
+
+		// Execute template with data
+		err = tmpl.Execute(outputFile, AllTables)
+		if err != nil {
+			cli.ReturnError(err)
+		}
+
+		fmt.Println("index.html created!")
+	}
 }

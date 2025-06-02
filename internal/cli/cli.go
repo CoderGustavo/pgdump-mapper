@@ -16,6 +16,9 @@ func HandleOptions(args []string) bool {
 		"-h":     &Options.Help,
 		"--raw":  &Options.Raw,
 		"-r":     &Options.Raw,
+		"--json": &Options.Json,
+		"--yaml": &Options.Yaml,
+		"--html": &Options.Html,
 	}
 
 	for _, arg := range args {

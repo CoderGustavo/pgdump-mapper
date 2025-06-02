@@ -21,3 +21,5 @@
 *.swo
 .idea/
 *.code-workspace
+
+index.html
