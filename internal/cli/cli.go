@@ -41,7 +41,7 @@ func ReturnError(err error) {
 
 func ReturnSuccess(msg string) {
 	if msg != "" {
-		fmt.Printf(msg, "\n\n")
+		fmt.Print(msg, "\n")
 	}
 
 	os.Exit(0)

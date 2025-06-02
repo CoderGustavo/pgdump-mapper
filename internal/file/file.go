@@ -190,6 +190,11 @@ func Export() {
 			cli.ReturnError(err)
 		}
 
-		fmt.Println("index.html created!")
+		cwd, err := os.Getwd()
+		if err != nil {
+			cli.ReturnError(err)
+		}
+
+		fmt.Printf("%s/index.html created!\n", cwd)
 	}
 }
