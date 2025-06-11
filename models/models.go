@@ -1,19 +1,18 @@
 package models
 
 type Options struct {
-	Help bool
-	Raw  bool
-	Json bool
-	Yaml bool
-	Html bool
+	Help   bool
+	Json   bool
+	Yaml   bool
+	Html   bool
+	Sqlite bool
 }
 
-var DefaultOptions = map[string]bool{
-	"--help": false,
-	"-h":     false,
-	"--raw":  true,
-	"-r":     true,
-	"--json": false,
-	"--yaml": false,
-	"--html": false,
+var CatalogOptions = map[string]bool{
+	"-h":       false,
+	"--help":   false,
+	"--json":   false,
+	"--yaml":   false,
+	"--html":   false,
+	"--sqlite": false,
 }

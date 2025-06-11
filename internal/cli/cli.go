@@ -9,16 +9,15 @@ import (
 
 var Options *models.Options
 
-func HandleOptions(args []string) bool {
+func HandleOptions(args []string) {
 	hasOptions := false
 	mapOptions := map[string]*bool{
-		"--help": &Options.Help,
-		"-h":     &Options.Help,
-		"--raw":  &Options.Raw,
-		"-r":     &Options.Raw,
-		"--json": &Options.Json,
-		"--yaml": &Options.Yaml,
-		"--html": &Options.Html,
+		"-h":       &Options.Help,
+		"--help":   &Options.Help,
+		"--json":   &Options.Json,
+		"--yaml":   &Options.Yaml,
+		"--html":   &Options.Html,
+		"--sqlite": &Options.Sqlite,
 	}
 
 	for _, arg := range args {
@@ -28,7 +27,10 @@ func HandleOptions(args []string) bool {
 		}
 	}
 
-	return hasOptions
+	// Set HTML as default
+	if !hasOptions {
+		Options.Html = true
+	}
 }
 
 func ReturnError(err error) {

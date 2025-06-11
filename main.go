@@ -14,7 +14,7 @@ import (
 func argsSanityCheck(args []string) error {
 	numOptions := 0
 	for _, arg := range args {
-		if _, exist := models.DefaultOptions[arg]; exist {
+		if _, exist := models.CatalogOptions[arg]; exist {
 			numOptions += 1
 		}
 	}

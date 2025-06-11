@@ -28,16 +28,18 @@ import (
 // }
 
 var (
-	Input     *string
-	Options   models.Options
-	AllTables []map[string]interface{}
+	Input         *string
+	Options       models.Options
+	AllTables     []map[string]interface{}
+	DBFile        *os.File
+	TmpSqliteFile string = "/tmp/pgdump-mapper.db.sqlite.txt"
 )
 
-func findTable(AllTables []map[string]interface{},
-	cacheAlterTable map[string]string) (*map[string]interface{}, bool) {
-	for _, table := range AllTables {
-		if table["name"] == cacheAlterTable["name"] &&
-			table["schema"] == cacheAlterTable["schema"] {
+func findTable(allTables []map[string]interface{},
+	targetTable map[string]string) (*map[string]interface{}, bool) {
+	for _, table := range allTables {
+		if table["name"] == targetTable["name"] &&
+			table["schema"] == targetTable["schema"] {
 			return &table, true
 		}
 	}
@@ -56,6 +58,13 @@ func Read() {
 		cacheAlterTable map[string]string
 	)
 
+	if Options.Sqlite {
+		DBFile, err = os.Create(TmpSqliteFile)
+		if err != nil {
+			cli.ReturnError(err)
+		}
+	}
+
 	state := "IDLE"
 	foundTable := false
 
@@ -66,8 +75,33 @@ func Read() {
 		if strings.HasPrefix(line, "COPY") {
 			state = "COPY"
 		}
+
 		if strings.HasPrefix(line, "ALTER TABLE") {
 			state = "ALTER-TABLE"
+		}
+
+		if Options.Sqlite && strings.HasPrefix(line, "CREATE TABLE") {
+			state = "CREATE-TABLE"
+		}
+
+		if state == "CREATE-TABLE" {
+			tmpLine := strings.ReplaceAll(line, "public.", "") + "\n"
+			if strings.HasPrefix(line, "    CONSTRAINT") {
+				tmpLine = "    CONSTRAINT tmp"
+			}
+			_, err := DBFile.WriteString(tmpLine)
+			if err != nil {
+				cli.ReturnError(err)
+			}
+
+			err = DBFile.Sync()
+			if err != nil {
+				cli.ReturnError(err)
+			}
+
+			if line == ");" {
+				state = "IDLE"
+			}
 		}
 
 		if state == "COPY" {
@@ -123,6 +157,15 @@ func Read() {
 				}
 			}
 			if pkey := parsePKey(line); pkey != "" {
+				if Options.Sqlite {
+					DBFile.WriteString(fmt.Sprintf("ALTER TABLE %s\n", cacheAlterTable["name"]))
+					DBFile.WriteString(fmt.Sprintf("%s\n", line))
+
+					err = DBFile.Sync()
+					if err != nil {
+						cli.ReturnError(err)
+					}
+				}
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					(*objTable)["primary_key"] = pkey
 				} else {
@@ -138,6 +181,9 @@ func Read() {
 			if fkey := parseFKey(line); fkey != nil {
 				fkeys := []map[string]string{}
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
+					fromName := (*objTable)["name"].(string)
+					fromSchema := (*objTable)["schema"].(string)
+					fkey["from"] = fromSchema + "." + fromName + "." + fkey["from"]
 					if objFkeys, exist := (*objTable)["foreign_key"]; exist {
 						(*objTable)["foreign_key"] = append(objFkeys.([]map[string]string), fkey)
 					} else {
@@ -163,6 +209,7 @@ func Export() {
 		j, _ := json.Marshal(AllTables)
 		fmt.Println(string(j))
 	}
+
 	if Options.Yaml {
 		out, err := yaml.Marshal(AllTables)
 		if err != nil {
@@ -170,6 +217,7 @@ func Export() {
 		}
 		fmt.Println(string(out))
 	}
+
 	if Options.Html {
 		// Parse template
 		tmpl, err := template.New("index").Parse(htmlTemplate)
@@ -196,5 +244,49 @@ func Export() {
 		}
 
 		fmt.Printf("%s/index.html created!\n", cwd)
+	}
+
+	if Options.Sqlite {
+		for _, table := range AllTables {
+			tableName := table["name"]
+			columns := table["columns"].([]string)
+			var data []map[string]string
+			if table["data"] != nil {
+				data = table["data"].([]map[string]string)
+			} else {
+				data = []map[string]string{}
+			}
+
+			for _, row := range data {
+				values := []string{}
+				for _, column := range columns {
+					if value, ok := row[column]; ok {
+						if value == "" {
+							values = append(values, "NULL")
+						} else if value == "\\N" {
+							values = append(values, "NULL")
+						} else {
+							values = append(values, fmt.Sprintf("'%s'", strings.ReplaceAll(value, "'", "''")))
+						}
+					} else {
+						values = append(values, "NULL")
+					}
+				}
+
+				insertStmt := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);\n",
+					tableName,
+					strings.Join(columns, ", "),
+					strings.Join(values, ", "))
+
+				_, err := DBFile.WriteString(insertStmt)
+				if err != nil {
+					cli.ReturnError(err)
+				}
+			}
+		}
+
+		if DBFile != nil {
+			DBFile.Close()
+		}
 	}
 }

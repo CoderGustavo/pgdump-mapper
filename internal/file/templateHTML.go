@@ -4,30 +4,17 @@ const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>PGDump-Mapper</title>
+    <title>pgdump-mapper</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script>
-        function showTable() {
-            var selected = document.getElementById("tableSelector").value;
-            var tables = document.getElementsByClassName("table-data");
-
-            for (var i = 0; i < tables.length; i++) {
-                tables[i].style.display = "none";
-            }
-
-            document.getElementById("table-" + selected).style.display = "block";
-        }
-    </script>
 </head>
 <body class="bg-light">
     <div class="ms-5 me-5 my-5">
-        <!-- Select and Button -->
         <div class="row mb-4">
             <div class="col-md-4">
                 <h5><label for="tableSelector" class="form-label">Select Table</label></h5>
                 <select id="tableSelector" class="form-select">
-                    {{range .}}
-                        <option value="{{.schema}}.{{.name}}">{{.name}}</option>
+                    {{range $index, $table := .}}
+                        <option value="table-{{$index}}">{{$table.name}}</option>
                     {{end}}
                 </select>
             </div>
@@ -36,22 +23,24 @@ const htmlTemplate = `<!DOCTYPE html>
             </div>
         </div>
 
-        {{range .}}
-            <div id="table-{{.schema}}.{{.name}}" class="table-data" style="display: none;">
-                <h4>{{.schema}}.{{.name}}</h4>
+        {{range $index, $table := .}}
+            <div id="table-{{$index}}" class="table-data" style="display: none;">
+                <h4>{{$table.schema}}.{{$table.name}}</h4>
                 <table class="table table-bordered table-striped">
                     <thead class="table-dark">
                         <tr>
-                            {{range $_, $col := .columns}}
-                                <th>{{$col}}</th>
+                            {{if $table.columns}}
+                                {{range $_, $c := $table.columns}}
+                                    <th>{{$c}}</th>
+                                {{end}}
                             {{end}}
                         </tr>
                     </thead>
                     <tbody>
-                        {{range $_, $rows := .values}}
+                        {{range $_, $d := $table.data}}
                             <tr>
-                                {{range $_,$col := $rows}}
-                                    <td>{{$col}}</td>
+                                {{range $_, $c := $table.columns}}
+                                    <td>{{index $d $c}}</td>
                                 {{end}}
                             </tr>
                         {{end}}
@@ -61,5 +50,18 @@ const htmlTemplate = `<!DOCTYPE html>
         {{end}}
     </div>
 </body>
+<script>
+    function showTable() {
+        var selected = document.getElementById("tableSelector").value;
+        var tables = document.getElementsByClassName("table-data");
+
+        for (var i = 0; i < tables.length; i++) {
+            tables[i].style.display = "none";
+        }
+
+        document.getElementById(selected).style.display = "block";
+    }
+    document.getElementById("table-0").style.display = "block";
+</script>
 </html>
 `
