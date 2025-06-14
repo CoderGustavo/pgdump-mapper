@@ -1,10 +1,10 @@
-package file
+package parser
 
 import (
 	"strings"
 )
 
-func parseCopy(line string, tbl *map[string]interface{}) {
+func Copy(line string, tbl *map[string]interface{}) {
 	if line == "\\." {
 		return
 	}

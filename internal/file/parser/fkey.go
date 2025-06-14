@@ -1,8 +1,8 @@
-package file
+package parser
 
 import "regexp"
 
-func parseFKey(line string) map[string]string {
+func FKey(line string) map[string]string {
 	re := regexp.MustCompile(`ADD CONSTRAINT (\w+) FOREIGN KEY \((\w+)\) REFERENCES (\w+).(\w+)\((\w+)\)`)
 	match := re.FindStringSubmatch(line)
 	if len(match) == 6 {

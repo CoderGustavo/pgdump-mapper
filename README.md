@@ -11,7 +11,7 @@ pgdump-mapper is a Go application designed to read PostgreSQL dump files and exp
   - **JSON**
   - **YAML**
   - **HTML**
-  - **SQLite (in progress)** 
+  - **SQLite** 
 
 ## Project Structure
 
@@ -21,8 +21,8 @@ pgdump-mapper
 │   ├── cli/            # Command-line interface related code
 │   ├── file/           # Main logic for reading and exporting data
 │   └── models/         # Data models used throughout the project
-├── README.md          # Documentation for the project
-└── main.go            # Entry point for the application
+├── README.md           # Documentation for the project
+└── main.go             # Entry point for the application
 ```
 
 ## Usage Instructions

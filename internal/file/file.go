@@ -12,6 +12,7 @@ import (
 	yaml "gopkg.in/yaml.v3"
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	parser "github.com/hedibertosilva/pgdump-mapper/internal/file/parser"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
@@ -32,7 +33,8 @@ var (
 	Options       models.Options
 	AllTables     []map[string]interface{}
 	DBFile        *os.File
-	TmpSqliteFile string = "/tmp/pgdump-mapper.db.sqlite.txt"
+	TmpSqliteFile string = "pgdump-mapper.sqlite.txt"
+	cwd, _               = os.Getwd()
 )
 
 func findTable(allTables []map[string]interface{},
@@ -86,8 +88,9 @@ func Read() {
 
 		if state == "CREATE-TABLE" {
 			tmpLine := strings.ReplaceAll(line, "public.", "") + "\n"
+			// Workaround for last column with comma
 			if strings.HasPrefix(line, "    CONSTRAINT") {
-				tmpLine = "    CONSTRAINT tmp"
+				tmpLine = "    CONSTRAINT temp"
 			}
 			_, err := DBFile.WriteString(tmpLine)
 			if err != nil {
@@ -130,7 +133,7 @@ func Read() {
 					}
 				}
 			} else {
-				parseCopy(line, &currentTable)
+				parser.Copy(line, &currentTable)
 				if strings.HasPrefix(line, "\\.") {
 					if !foundTable {
 						AllTables = append(AllTables, currentTable)
@@ -156,7 +159,7 @@ func Read() {
 					"name":   matchAlterTable[2],
 				}
 			}
-			if pkey := parsePKey(line); pkey != "" {
+			if pkey := parser.PKey(line); pkey != "" {
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					(*objTable)["primary_key"] = pkey
 				} else {
@@ -169,7 +172,7 @@ func Read() {
 				}
 				state = "IDLE"
 			}
-			if fkey := parseFKey(line); fkey != nil {
+			if fkey := parser.FKey(line); fkey != nil {
 				fkeys := []map[string]string{}
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					fromName := (*objTable)["name"].(string)
@@ -229,11 +232,6 @@ func Export() {
 			cli.ReturnError(err)
 		}
 
-		cwd, err := os.Getwd()
-		if err != nil {
-			cli.ReturnError(err)
-		}
-
 		fmt.Printf("%s/index.html created!\n", cwd)
 	}
 
@@ -273,8 +271,13 @@ func Export() {
 				if err != nil {
 					cli.ReturnError(err)
 				}
+
 			}
+
 		}
+
+		fmt.Printf("%s/%s created!\n", cwd, TmpSqliteFile)
+		fmt.Printf("Import it using: sqlite3 <db-name>.sqlite3 < <%s path>\n", TmpSqliteFile)
 
 		if DBFile != nil {
 			DBFile.Close()
