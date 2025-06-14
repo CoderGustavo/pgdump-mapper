@@ -14,4 +14,5 @@ Options:
 	--help, -h	Give a bit of help about the command line arguments and options.
 	--json		Export as JSON.
 	--yaml		Export as YAML.
-	--html		Export as HTML.`
+	--html		Export as HTML. (default)
+	--sqlite    Export as SQLite.`

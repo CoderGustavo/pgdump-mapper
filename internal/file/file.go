@@ -157,15 +157,6 @@ func Read() {
 				}
 			}
 			if pkey := parsePKey(line); pkey != "" {
-				if Options.Sqlite {
-					DBFile.WriteString(fmt.Sprintf("ALTER TABLE %s\n", cacheAlterTable["name"]))
-					DBFile.WriteString(fmt.Sprintf("%s\n", line))
-
-					err = DBFile.Sync()
-					if err != nil {
-						cli.ReturnError(err)
-					}
-				}
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					(*objTable)["primary_key"] = pkey
 				} else {
