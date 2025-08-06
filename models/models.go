@@ -6,6 +6,12 @@ type Options struct {
 	Yaml   bool
 	Html   bool
 	Sqlite bool
+	Cli bool
+}
+
+type FilterOptions struct {
+	TableName string
+	Columns   []string
 }
 
 var CatalogOptions = map[string]bool{
@@ -15,4 +21,7 @@ var CatalogOptions = map[string]bool{
 	"--yaml":   false,
 	"--html":   false,
 	"--sqlite": false,
+	"--cli": false,
+	"--table": false,
+	"--columns": false,
 }

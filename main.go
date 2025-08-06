@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
 	errors "github.com/hedibertosilva/pgdump-mapper/internal/cli/errors"
@@ -15,7 +16,18 @@ func argsSanityCheck(args []string) error {
 	numOptions := 0
 	for _, arg := range args {
 		if _, exist := models.CatalogOptions[arg]; exist {
-			numOptions += 1
+			numOptions++
+			continue
+		}
+
+		// If the argument follow --key=value format, check if the key is in CatalogOptions
+		if strings.HasPrefix(arg, "--") && strings.Contains(arg, "=") {
+			parts := strings.SplitN(arg, "=", 2)
+			key := parts[0]
+			if _, exist := models.CatalogOptions[key]; exist {
+				numOptions++
+				continue
+			}
 		}
 	}
 

@@ -3,11 +3,13 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
-var Options *models.Options
+var Options = &models.Options{}
+var Filters = &models.FilterOptions{}
 
 func HandleOptions(args []string) {
 	hasOptions := false
@@ -18,12 +20,29 @@ func HandleOptions(args []string) {
 		"--yaml":   &Options.Yaml,
 		"--html":   &Options.Html,
 		"--sqlite": &Options.Sqlite,
+		"--cli":    &Options.Cli,
 	}
 
 	for _, arg := range args {
 		if opt, exist := mapOptions[arg]; exist {
 			*opt = true
 			hasOptions = true
+			continue
+		}
+
+		if strings.HasPrefix(arg, "--") && strings.Contains(arg, "=") {
+			parts := strings.SplitN(arg, "=", 2)
+			key := parts[0]
+			value := parts[1]
+
+			switch key {
+			case "--table":
+				Filters.TableName = value
+				hasOptions = true
+			case "--columns":
+				Filters.Columns = strings.Split(value, ",")
+				hasOptions = true
+			}
 		}
 	}
 

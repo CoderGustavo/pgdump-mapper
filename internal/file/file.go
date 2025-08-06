@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"text/tabwriter"
 
 	yaml "gopkg.in/yaml.v3"
 
@@ -46,6 +47,15 @@ func findTable(allTables []map[string]interface{},
 		}
 	}
 	return nil, false
+}
+
+func contains(list []string, item string) bool {
+	for _, v := range list {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }
 
 func Read() {
@@ -283,4 +293,52 @@ func Export() {
 			DBFile.Close()
 		}
 	}
+
+	if Options.Cli {
+		for _, table := range AllTables {
+			tableName := table["name"].(string)
+
+			// Filter table
+			if cli.Filters.TableName != "" && cli.Filters.TableName != tableName {
+			 	continue
+			}
+
+			columns := table["columns"].([]string)
+			var data []map[string]string
+			if table["data"] != nil {
+				data = table["data"].([]map[string]string)
+			} else {
+				data = []map[string]string{}
+			}
+
+			// Filter columns
+			var selectedColumns []string
+			if len(cli.Filters.Columns) > 0 {
+				for _, col := range cli.Filters.Columns {
+					if contains(columns, col) {
+						selectedColumns = append(selectedColumns, col)
+					}
+				}
+			} else {
+				selectedColumns = columns
+			}
+
+			fmt.Printf("\nTable: %s\n", tableName)
+			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+
+			fmt.Fprintln(w, strings.Join(selectedColumns, "\t"))
+
+			for _, row := range data {
+				values := []string{}
+				for _, col := range selectedColumns {
+					values = append(values, row[col])
+				}
+				fmt.Fprintln(w, strings.Join(values, "\t"))
+			}
+
+			w.Flush()
+		}
+	}
+
+
 }

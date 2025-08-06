@@ -24,15 +24,21 @@ const htmlTemplate = `<!DOCTYPE html>
         </div>
 
         {{range $index, $table := .}}
-            <div id="table-{{$index}}" class="table-data" style="display: none;">
+            <div id="table-{{$index}}" class="table-data table-responsive" style="display: none;">
                 <h4>{{$table.schema}}.{{$table.name}}</h4>
-                <table class="table table-bordered table-striped">
+                <table class="table w-auto table-bordered table-striped">
                     <thead class="table-dark">
                         <tr>
-                            {{if $table.columns}}
-                                {{range $_, $c := $table.columns}}
-                                    <th>{{$c}}</th>
-                                {{end}}
+                            {{range $ci, $c := $table.columns}}
+                                <th class="text-nowrap">
+                                    {{$c}}
+                                    <button class="btn btn-sm btn-outline-secondary btn-filter ms-2" data-table="{{$index}}" data-column="{{$c}}" data-colindex="{{$ci}}" onclick="toggleSelectFilter(this)">
+                                        &#128269;
+                                    </button>
+                                    <select class="form-select form-select-sm filter-select mt-1 d-none" data-table="{{$index}}" data-column="{{$c}}" data-colindex="{{$ci}}">
+                                        <option value="">-- Todos --</option>
+                                    </select>
+                                </th>
                             {{end}}
                         </tr>
                     </thead>
@@ -40,7 +46,7 @@ const htmlTemplate = `<!DOCTYPE html>
                         {{range $_, $d := $table.data}}
                             <tr>
                                 {{range $_, $c := $table.columns}}
-                                    <td>{{index $d $c}}</td>
+                                    <td class="text-nowrap">{{index $d $c}}</td>
                                 {{end}}
                             </tr>
                         {{end}}
@@ -59,8 +65,103 @@ const htmlTemplate = `<!DOCTYPE html>
             tables[i].style.display = "none";
         }
 
-        document.getElementById(selected).style.display = "block";
+        var table = document.getElementById(selected);
+        table.style.display = "block";
+
+        cleanSingleOptionFilters(table);
     }
+
+    function cleanSingleOptionFilters(table) {
+        const buttons = table.querySelectorAll(".btn-filter");
+
+        buttons.forEach(button => {
+            const tableIndex = button.getAttribute("data-table");
+            const colIndex = parseInt(button.getAttribute("data-colindex"));
+            const select = button.nextElementSibling;
+
+            const rows = document.querySelectorAll("#table-" + tableIndex + " tbody tr");
+            const values = new Set();
+
+            rows.forEach(row => {
+                const cell = row.children[colIndex];
+                if (cell) values.add(cell.textContent.trim());
+            });
+
+            if (values.size <= 1) {
+                button.style.display = "none";
+                select.style.display = "none";
+            } else {
+                button.style.display = "inline-block";
+                select.classList.add("d-none");
+
+                if (select.options.length <= 1) {
+                    Array.from(values).sort().forEach(val => {
+                        const option = document.createElement("option");
+                        option.value = val;
+                        option.textContent = val;
+                        select.appendChild(option);
+                    });
+                }
+            }
+        });
+    }
+
+
+    function toggleSelectFilter(button) {
+        const tableIndex = button.getAttribute("data-table");
+        const colIndex = parseInt(button.getAttribute("data-colindex"));
+        const select = button.nextElementSibling;
+
+        const rows = document.querySelectorAll("#table-" + tableIndex + " tbody tr");
+        const values = new Set();
+
+        rows.forEach(row => {
+            const cell = row.children[colIndex];
+            if (cell) values.add(cell.textContent.trim());
+        });
+
+        if (values.size <= 1) {
+            button.style.display = "none";
+            select.style.display = "none";
+            return;
+        }
+
+        button.style.display = "inline-block";
+
+        select.classList.toggle("d-none");
+
+        if (select.options.length > 1) return;
+
+        Array.from(values).sort().forEach(val => {
+            const option = document.createElement("option");
+            option.value = val;
+            option.textContent = val;
+            select.appendChild(option);
+        });
+    }
+
+
+    document.addEventListener("change", function(event) {
+        if (event.target.classList.contains("filter-select")) {
+            const tableIndex = event.target.getAttribute("data-table");
+            const rows = document.querySelectorAll("#table-" + tableIndex + " tbody tr");
+
+            rows.forEach(row => {
+                let visible = true;
+                document.querySelectorAll('.filter-select[data-table="' + tableIndex + '"]').forEach(select => {
+                    const colIndex = parseInt(select.getAttribute("data-colindex"));
+                    const value = select.value.trim();
+
+                    if (value && row.children[colIndex].textContent.trim() !== value) {
+                        visible = false;
+                    }
+                });
+
+                row.style.display = visible ? "" : "none";
+            });
+        }
+    });
+
     document.getElementById("table-0").style.display = "block";
 </script>
 </html>
