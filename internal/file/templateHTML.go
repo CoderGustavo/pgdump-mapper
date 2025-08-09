@@ -36,7 +36,7 @@ const htmlTemplate = `<!DOCTYPE html>
                                         &#128269;
                                     </button>
                                     <select class="form-select form-select-sm filter-select mt-1 d-none" data-table="{{$index}}" data-column="{{$c}}" data-colindex="{{$ci}}">
-                                        <option value="">-- Todos --</option>
+                                        <option value="">-- All --</option>
                                     </select>
                                 </th>
                             {{end}}
