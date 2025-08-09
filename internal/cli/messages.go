@@ -15,7 +15,7 @@ Options:
 	--json		Export as JSON.
 	--yaml		Export as YAML.
 	--html		Export as HTML. (default)
-	--sqlite    Export as SQLite.
-	--cli       Export as CLI table.
-	--table     Filter by table (valid only with --cli).
-	--columns   Filter by Columns (valid only with --cli).`
+	--sqlite	Export as SQLite.
+	--cli		Export as CLI table.
+	--table		Filter by table (valid for json, cli and yaml).
+	--columns	Filter by Columns (valid for json, cli and yaml).`

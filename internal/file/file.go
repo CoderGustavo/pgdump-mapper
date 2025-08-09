@@ -210,12 +210,37 @@ func Read() {
 
 func Export() {
 	if Options.Json {
-		j, _ := json.Marshal(AllTables)
-		fmt.Println(string(j))
+		var tablesToExport []map[string]interface{}
+		if cli.Filters.TableName != "" {
+			for _, table := range AllTables {
+				if table["name"].(string) == cli.Filters.TableName {
+					tablesToExport = append(tablesToExport, table)
+				}
+			}
+		} else {
+			tablesToExport = AllTables
+		}
+
+		output, err := json.Marshal(tablesToExport)
+		if err != nil {
+			cli.ReturnError(err)
+		}
+		fmt.Println(string(output))
 	}
 
 	if Options.Yaml {
-		out, err := yaml.Marshal(AllTables)
+		var tablesToExport []map[string]interface{}
+		if cli.Filters.TableName != "" {
+			for _, table := range AllTables {
+				if table["name"].(string) == cli.Filters.TableName {
+					tablesToExport = append(tablesToExport, table)
+				}
+			}
+		} else {
+			tablesToExport = AllTables
+		}
+
+		out, err := yaml.Marshal(tablesToExport)
 		if err != nil {
 			cli.ReturnError(err)
 		}
@@ -300,7 +325,7 @@ func Export() {
 
 			// Filter table
 			if cli.Filters.TableName != "" && cli.Filters.TableName != tableName {
-			 	continue
+				continue
 			}
 
 			columns := table["columns"].([]string)
@@ -339,6 +364,4 @@ func Export() {
 			w.Flush()
 		}
 	}
-
-
 }
