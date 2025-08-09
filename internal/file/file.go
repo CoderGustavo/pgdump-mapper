@@ -209,11 +209,20 @@ func Read() {
 }
 
 func Export() {
-	if Options.Json {
+
+	var schema string
+	if cli.Filters.Schema != "" {
+		schema = cli.Filters.Schema
+	} else {
+		schema = "public"
+	}
+
+	if Options.Json || Options.JsonPretty {
 		var tablesToExport []map[string]interface{}
 		if cli.Filters.TableName != "" {
 			for _, table := range AllTables {
-				if table["name"].(string) == cli.Filters.TableName {
+				if table["name"].(string) == cli.Filters.TableName &&
+					table["schema"].(string) == schema {
 					tablesToExport = append(tablesToExport, table)
 				}
 			}
@@ -221,18 +230,30 @@ func Export() {
 			tablesToExport = AllTables
 		}
 
-		output, err := json.Marshal(tablesToExport)
-		if err != nil {
-			cli.ReturnError(err)
+		var output []byte
+		var err error
+
+		if len(tablesToExport) > 0 {
+			if Options.JsonPretty {
+				output, err = json.MarshalIndent(tablesToExport, "", "  ")
+			} else {
+				output, err = json.Marshal(tablesToExport)
+			}
+
+			if err != nil {
+				cli.ReturnError(err)
+			}
+
+			fmt.Println(string(output))
 		}
-		fmt.Println(string(output))
 	}
 
 	if Options.Yaml {
 		var tablesToExport []map[string]interface{}
 		if cli.Filters.TableName != "" {
 			for _, table := range AllTables {
-				if table["name"].(string) == cli.Filters.TableName {
+				if table["name"].(string) == cli.Filters.TableName &&
+					table["schema"].(string) == schema {
 					tablesToExport = append(tablesToExport, table)
 				}
 			}
@@ -324,7 +345,8 @@ func Export() {
 			tableName := table["name"].(string)
 
 			// Filter table
-			if cli.Filters.TableName != "" && cli.Filters.TableName != tableName {
+			if cli.Filters.TableName != "" && (table["name"].(string) == cli.Filters.TableName &&
+				table["schema"].(string) == schema) {
 				continue
 			}
 

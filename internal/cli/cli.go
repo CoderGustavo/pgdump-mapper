@@ -14,13 +14,14 @@ var Filters = &models.FilterOptions{}
 func HandleOptions(args []string) {
 	hasOptions := false
 	mapOptions := map[string]*bool{
-		"-h":       &Options.Help,
-		"--help":   &Options.Help,
-		"--json":   &Options.Json,
-		"--yaml":   &Options.Yaml,
-		"--html":   &Options.Html,
-		"--sqlite": &Options.Sqlite,
-		"--cli":    &Options.Cli,
+		"-h":            &Options.Help,
+		"--help":        &Options.Help,
+		"--json":        &Options.Json,
+		"--json-pretty": &Options.JsonPretty,
+		"--yaml":        &Options.Yaml,
+		"--html":        &Options.Html,
+		"--sqlite":      &Options.Sqlite,
+		"--cli":         &Options.Cli,
 	}
 
 	for _, arg := range args {
@@ -36,6 +37,9 @@ func HandleOptions(args []string) {
 			value := parts[1]
 
 			switch key {
+			case "--schema":
+				Filters.Schema = value
+				hasOptions = true
 			case "--table":
 				Filters.TableName = value
 				hasOptions = true
