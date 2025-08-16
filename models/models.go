@@ -8,6 +8,7 @@ type Options struct {
 	Html       bool
 	Sqlite     bool
 	Cli        bool
+	Cache      bool
 }
 
 type FilterOptions struct {
@@ -25,6 +26,7 @@ var CatalogOptions = map[string]bool{
 	"--html":        false,
 	"--sqlite":      false,
 	"--cli":         false,
+	"--cache":       false,
 	"--schema":      false,
 	"--table":       false,
 	"--columns":     false,

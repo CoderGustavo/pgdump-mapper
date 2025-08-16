@@ -9,6 +9,7 @@ pgdump-mapper is a Go application designed to read PostgreSQL dump files and exp
 - **Read PostgreSQL Dump Files**: Efficiently parses PostgreSQL dump files, handling table definitions, primary keys, and foreign keys.
 - **Export Options**: Supports exporting data in multiple formats:
   - **JSON**
+  - **JSON Pretty**
   - **YAML**
   - **HTML**
   - **SQLite** 
@@ -38,11 +39,16 @@ pgdump-mapper
    go build -o pgdump-mapper main.go
    ```
 
-3. **Run the Application**:
+3. **Install it**:
    ```
-   ./pgdump-mapper <pgdump-file> --<help|json|yaml|html|sqlite>
+   cp pgdump-mapper /home/$USER/.local/bin
+
+4. **Run the Application**:
+   ```
+   pgdump-mapper <pgdump-file> --<help|json|yaml|html|sqlite> [filters: --table --columns]
    ```
 
-## Conclusion
+   ```
+## Contact
 
-pgdump-mapper is a powerful tool for anyone needing to work with PostgreSQL dump files. Its flexibility in output formats and robust error handling make it an essential utility for database administrators and developers alike.
+Feel free to contribute. Contact me via hed.cavalcante@gmail.com
