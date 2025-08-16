@@ -44,9 +44,9 @@ pgdump-mapper
    cp pgdump-mapper /home/$USER/.local/bin
    ```
 
-4. **Run the Application**:
+4. **How to use**:
    ```
-   pgdump-mapper <pgdump-file> --<help|json|yaml|html|sqlite> [filters: --table --columns]
+   pgdump-mapper --help
    ```
 ## Contributing Code
 
