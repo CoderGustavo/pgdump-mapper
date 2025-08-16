@@ -22,6 +22,7 @@ func HandleOptions(args []string) {
 		"--html":        &Options.Html,
 		"--sqlite":      &Options.Sqlite,
 		"--cli":         &Options.Cli,
+		"--cache":       &Options.Cache,
 	}
 
 	for _, arg := range args {
