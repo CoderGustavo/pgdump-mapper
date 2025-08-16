@@ -42,13 +42,12 @@ pgdump-mapper
 3. **Install it**:
    ```
    cp pgdump-mapper /home/$USER/.local/bin
+   ```
 
 4. **Run the Application**:
    ```
    pgdump-mapper <pgdump-file> --<help|json|yaml|html|sqlite> [filters: --table --columns]
    ```
-
-   ```
-## Contact
+## Contributing Code
 
 Feel free to contribute. Contact me via hed.cavalcante@gmail.com
