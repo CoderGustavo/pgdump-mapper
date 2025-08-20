@@ -23,11 +23,16 @@ The pgdump-mapper is designed to read PostgreSQL dump files and export the data 
 ```
 pgdump-mapper
 ├── internal
-│   ├── cli/            # Command-line interface related code
-│   └── file/           # Main logic for reading and exporting data 
-├── models/             # Data models used throughout the project
-├── README.md           # Documentation for the project
-└── main.go             # Entry point for the application
+│   ├── cli/            # Command-line interface handles
+│   │   └── errors/     # Error declarations
+│   │   └── messages/   # Message declarations 
+│   └── data/           # Main logic for reading and exporting data 
+│       └── exporters/  # Logic for data export 
+│       └── parsers/    # Logic for data processing 
+│       └── templates/  # Template declarations
+├── models/             # Data models 
+├── README.md           # Documentation
+└── main.go             # Entry point
 ```
 
 ## Usage Instructions
