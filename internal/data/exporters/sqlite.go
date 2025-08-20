@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	"github.com/hedibertosilva/pgdump-mapper/models"
+	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
 func SQLite(schema string, allTables []models.Table, dbFile *os.File, rootPath string, tmpSqliteFile string) {

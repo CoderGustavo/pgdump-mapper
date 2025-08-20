@@ -7,7 +7,7 @@ import (
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
 	errors "github.com/hedibertosilva/pgdump-mapper/internal/cli/errors"
-	file "github.com/hedibertosilva/pgdump-mapper/internal/file"
+	data "github.com/hedibertosilva/pgdump-mapper/internal/data"
 
 	messages "github.com/hedibertosilva/pgdump-mapper/internal/cli/messages"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
@@ -78,9 +78,9 @@ func main() {
 		cli.ReturnError(err)
 	}
 
-	file.Input = &input
-	file.Options = opts
+	data.Input = &input
+	data.Options = opts
 
-	file.Read()
-	file.Export()
+	data.Read()
+	data.Export()
 }

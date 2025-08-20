@@ -3,9 +3,9 @@ package exporters
 import (
 	"fmt"
 
-	"github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	"github.com/hedibertosilva/pgdump-mapper/models"
-	"gopkg.in/yaml.v3"
+	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
+	yaml "gopkg.in/yaml.v3"
 )
 
 func YAML(schema string, tables []models.Table) {

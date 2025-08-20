@@ -6,8 +6,8 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	"github.com/hedibertosilva/pgdump-mapper/models"
+	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
 func Contains(list []string, item string) bool {

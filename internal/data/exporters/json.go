@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	"github.com/hedibertosilva/pgdump-mapper/models"
+	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
 func JSON(schema string, tables []models.Table, isJsonPretty bool) {

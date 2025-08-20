@@ -1,4 +1,4 @@
-package file
+package data
 
 import (
 	"bufio"
@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	exporters "github.com/hedibertosilva/pgdump-mapper/internal/file/exporters"
-	parsers "github.com/hedibertosilva/pgdump-mapper/internal/file/parsers"
+	exporters "github.com/hedibertosilva/pgdump-mapper/internal/data/exporters"
+	parsers "github.com/hedibertosilva/pgdump-mapper/internal/data/parsers"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 

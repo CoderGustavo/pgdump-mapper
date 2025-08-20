@@ -5,9 +5,9 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	"github.com/hedibertosilva/pgdump-mapper/internal/file/templates"
-	"github.com/hedibertosilva/pgdump-mapper/models"
+	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	templates "github.com/hedibertosilva/pgdump-mapper/internal/data/templates"
+	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
 func HTML(tables []models.Table, rootPath string) {
