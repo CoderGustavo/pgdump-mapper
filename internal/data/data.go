@@ -14,9 +14,9 @@ import (
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
+var Input *string
+
 var (
-	Input         *string
-	Options       models.Options
 	tables        []models.Table
 	dbFile        *os.File
 	tmpSqliteFile string = "pgdump-mapper.sqlite.txt"
@@ -37,7 +37,7 @@ func FindTable(tables []models.Table, targetTable models.Table) (*models.Table, 
 
 func Read() {
 
-	if Options.Cache {
+	if cli.Options.Cache {
 		basename := filepath.Base(*Input)
 		tmpCacheFile = filepath.Join(tmpCacheDir, basename)
 
@@ -66,7 +66,7 @@ func Read() {
 		cacheAlterTable models.Table
 	)
 
-	if Options.Sqlite {
+	if cli.Options.Sqlite {
 		dbFile, err = os.Create(tmpSqliteFile)
 		if err != nil {
 			cli.ReturnError(err)
@@ -88,7 +88,7 @@ func Read() {
 			state = "ALTER-TABLE"
 		}
 
-		if Options.Sqlite && strings.HasPrefix(line, "CREATE TABLE") {
+		if cli.Options.Sqlite && strings.HasPrefix(line, "CREATE TABLE") {
 			state = "CREATE-TABLE"
 		}
 
@@ -222,7 +222,7 @@ func Read() {
 
 	// Save Cache
 
-	if Options.Cache {
+	if cli.Options.Cache {
 		err := os.MkdirAll(tmpCacheDir, os.ModePerm)
 		if err != nil {
 			cli.ReturnError(err)
@@ -249,23 +249,23 @@ func Export() {
 		schema = "public"
 	}
 
-	if Options.Json || Options.JsonPretty {
-		exporters.JSON(schema, tables, Options.JsonPretty)
+	if cli.Options.Json || cli.Options.JsonPretty {
+		exporters.JSON(schema, tables)
 	}
 
-	if Options.Yaml {
+	if cli.Options.Yaml {
 		exporters.YAML(schema, tables)
 	}
 
-	if Options.Html {
+	if cli.Options.Html {
 		exporters.HTML(tables, rootPath)
 	}
 
-	if Options.Sqlite {
+	if cli.Options.Sqlite {
 		exporters.SQLite(schema, tables, dbFile, rootPath, tmpSqliteFile)
 	}
 
-	if Options.Cli {
+	if cli.Options.Cli {
 		exporters.CLI(schema, tables)
 	}
 }
