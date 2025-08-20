@@ -9,6 +9,7 @@ import (
 	errors "github.com/hedibertosilva/pgdump-mapper/internal/cli/errors"
 	file "github.com/hedibertosilva/pgdump-mapper/internal/file"
 
+	messages "github.com/hedibertosilva/pgdump-mapper/internal/cli/messages"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
@@ -64,7 +65,7 @@ func main() {
 	cli.HandleOptions(args)
 
 	if opts.Help {
-		msg := cli.HelpContent
+		msg := messages.HelpContent
 		cli.ReturnSuccess(msg)
 	}
 

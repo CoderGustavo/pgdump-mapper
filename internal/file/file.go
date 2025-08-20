@@ -14,7 +14,8 @@ import (
 	yaml "gopkg.in/yaml.v3"
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
-	parser "github.com/hedibertosilva/pgdump-mapper/internal/file/parser"
+	parsers "github.com/hedibertosilva/pgdump-mapper/internal/file/parsers"
+	templates "github.com/hedibertosilva/pgdump-mapper/internal/file/templates"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
@@ -162,7 +163,7 @@ func Read() {
 					}
 				}
 			} else {
-				// Convert currentTable to map[string]interface{} for parser.Copy
+				// Convert currentTable to map[string]interface{} for parsers.Copy
 				tableMap := map[string]interface{}{
 					"name":        currentTable.Name,
 					"schema":      currentTable.Schema,
@@ -172,7 +173,7 @@ func Read() {
 					"primary_key": currentTable.PrimaryKey,
 					"foreign_key": currentTable.ForeignKey,
 				}
-				parser.Copy(line, &tableMap)
+				parsers.Copy(line, &tableMap)
 				// Update currentTable from tableMap if needed
 				if v, ok := tableMap["data"].([]map[string]string); ok {
 					currentTable.Data = v
@@ -205,7 +206,7 @@ func Read() {
 					Schema: matchAlterTable[1],
 				}
 			}
-			if pkey := parser.PKey(line); pkey != "" {
+			if pkey := parsers.PKey(line); pkey != "" {
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					(*objTable).PrimaryKey = pkey
 				} else {
@@ -218,7 +219,7 @@ func Read() {
 				}
 				state = "IDLE"
 			}
-			if fkey := parser.FKey(line); fkey != nil {
+			if fkey := parsers.FKey(line); fkey != nil {
 				fkeys := []map[string]string{}
 				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
 					fromName := (*objTable).Name
@@ -325,7 +326,7 @@ func Export() {
 
 	if Options.Html {
 		// Parse template
-		tmpl, err := template.New("index").Parse(htmlTemplate)
+		tmpl, err := template.New("index").Parse(templates.HTML)
 		if err != nil {
 			cli.ReturnError(err)
 		}

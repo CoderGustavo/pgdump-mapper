@@ -1,6 +1,6 @@
-package file
+package templates
 
-const htmlTemplate = `<!DOCTYPE html>
+const HTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -14,7 +14,7 @@ const htmlTemplate = `<!DOCTYPE html>
                 <h5><label for="tableSelector" class="form-label">Select Table</label></h5>
                 <select id="tableSelector" class="form-select">
                     {{range $index, $table := .}}
-                        <option value="table-{{$index}}">{{$table.name}}</option>
+                        <option value="table-{{$index}}">{{$table.Name}}</option>
                     {{end}}
                 </select>
             </div>
@@ -25,11 +25,11 @@ const htmlTemplate = `<!DOCTYPE html>
 
         {{range $index, $table := .}}
             <div id="table-{{$index}}" class="table-data table-responsive" style="display: none;">
-                <h4>{{$table.schema}}.{{$table.name}}</h4>
+                <h4>{{$table.Schema}}.{{$table.Name}}</h4>
                 <table class="table w-auto table-bordered table-striped">
                     <thead class="table-dark">
                         <tr>
-                            {{range $ci, $c := $table.columns}}
+                            {{range $ci, $c := $table.Columns}}
                                 <th class="text-nowrap">
                                     {{$c}}
                                     <button class="btn btn-sm btn-outline-secondary btn-filter ms-2" data-table="{{$index}}" data-column="{{$c}}" data-colindex="{{$ci}}" onclick="toggleSelectFilter(this)">
@@ -43,9 +43,9 @@ const htmlTemplate = `<!DOCTYPE html>
                         </tr>
                     </thead>
                     <tbody>
-                        {{range $_, $d := $table.data}}
+                        {{range $_, $d := $table.Data}}
                             <tr>
-                                {{range $_, $c := $table.columns}}
+                                {{range $_, $c := $table.Columns}}
                                     <td class="text-nowrap">{{index $d $c}}</td>
                                 {{end}}
                             </tr>
