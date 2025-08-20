@@ -1,4 +1,4 @@
-package cli
+package messages
 
 const HelpContent = `pgump-mapper is a tool for mapping and exploring pg_dump content.
 

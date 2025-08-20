@@ -31,3 +31,13 @@ var CatalogOptions = map[string]bool{
 	"--table":       false,
 	"--columns":     false,
 }
+
+type Table struct {
+	Name       string              `json:"name"`
+	Schema     string              `json:"schema"`
+	Data       []map[string]string `json:"data"`
+	Columns    []string            `json:"columns"`
+	Values     [][]string          `json:"values"`
+	PrimaryKey string              `json:"primary_key"`
+	ForeignKey []map[string]string `json:"foreign_key"`
+}
