@@ -3,45 +3,30 @@ package file
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/tabwriter"
-
-	yaml "gopkg.in/yaml.v3"
 
 	cli "github.com/hedibertosilva/pgdump-mapper/internal/cli"
+	exporters "github.com/hedibertosilva/pgdump-mapper/internal/file/exporters"
 	parsers "github.com/hedibertosilva/pgdump-mapper/internal/file/parsers"
-	templates "github.com/hedibertosilva/pgdump-mapper/internal/file/templates"
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
-
-type Table struct {
-	Name       string              `json:"name"`
-	Schema     string              `json:"schema"`
-	Data       []map[string]string `json:"data"`
-	Columns    []string            `json:"columns"`
-	Values     [][]string          `json:"values"`
-	PrimaryKey string              `json:"primary_key"`
-	ForeignKey []map[string]string `json:"foreign_key"`
-}
 
 var (
 	Input         *string
 	Options       models.Options
-	AllTables     []Table
-	DBFile        *os.File
-	TmpSqliteFile string = "pgdump-mapper.sqlite.txt"
-	TmpCacheDir   string = "/tmp/pgdump-mapper"
-	TmpCacheFile  string = ""
-	cwd, _               = os.Getwd()
+	tables        []models.Table
+	dbFile        *os.File
+	tmpSqliteFile string = "pgdump-mapper.sqlite.txt"
+	tmpCacheDir   string = "/tmp/pgdump-mapper"
+	tmpCacheFile  string = ""
+	rootPath, _          = os.Getwd()
 )
 
-func findTable(allTables []Table, targetTable Table) (*Table, bool) {
-	for _, table := range allTables {
+func FindTable(tables []models.Table, targetTable models.Table) (*models.Table, bool) {
+	for _, table := range tables {
 		if table.Name == targetTable.Name &&
 			table.Schema == targetTable.Schema {
 			return &table, true
@@ -50,27 +35,18 @@ func findTable(allTables []Table, targetTable Table) (*Table, bool) {
 	return nil, false
 }
 
-func contains(list []string, item string) bool {
-	for _, v := range list {
-		if v == item {
-			return true
-		}
-	}
-	return false
-}
-
 func Read() {
 
 	if Options.Cache {
 		basename := filepath.Base(*Input)
-		TmpCacheFile = filepath.Join(TmpCacheDir, basename)
+		tmpCacheFile = filepath.Join(tmpCacheDir, basename)
 
-		fileBytes, err := os.ReadFile(TmpCacheFile)
+		fileBytes, err := os.ReadFile(tmpCacheFile)
 		if err != nil {
 			// No cache found. Process and save one later.
 		}
 
-		err = json.Unmarshal(fileBytes, &AllTables)
+		err = json.Unmarshal(fileBytes, &tables)
 		if err == nil {
 			// Cache loaded.
 			return
@@ -86,12 +62,12 @@ func Read() {
 	defer file.Close()
 
 	var (
-		currentTable    Table
-		cacheAlterTable Table
+		currentTable    models.Table
+		cacheAlterTable models.Table
 	)
 
 	if Options.Sqlite {
-		DBFile, err = os.Create(TmpSqliteFile)
+		dbFile, err = os.Create(tmpSqliteFile)
 		if err != nil {
 			cli.ReturnError(err)
 		}
@@ -122,12 +98,12 @@ func Read() {
 			if strings.HasPrefix(line, "    CONSTRAINT") {
 				tmpLine = "    CONSTRAINT temp"
 			}
-			_, err := DBFile.WriteString(tmpLine)
+			_, err := dbFile.WriteString(tmpLine)
 			if err != nil {
 				cli.ReturnError(err)
 			}
 
-			err = DBFile.Sync()
+			err = dbFile.Sync()
 			if err != nil {
 				cli.ReturnError(err)
 			}
@@ -147,16 +123,16 @@ func Read() {
 				// [1] Schema
 				// [2] Table
 				// [3] Columns
-				targetTable := Table{
+				targetTable := models.Table{
 					Name:   metadata[2],
 					Schema: metadata[1],
 				}
-				if objTable, exist := findTable(AllTables, targetTable); exist {
+				if objTable, exist := FindTable(tables, targetTable); exist {
 					foundTable = true
 					currentTable = *objTable
 					currentTable.Columns = strings.Split(metadata[3], ", ")
 				} else {
-					currentTable = Table{
+					currentTable = models.Table{
 						Name:    targetTable.Name,
 						Schema:  targetTable.Schema,
 						Columns: strings.Split(metadata[3], ", "),
@@ -183,11 +159,11 @@ func Read() {
 				}
 				if strings.HasPrefix(line, "\\.") {
 					if !foundTable {
-						AllTables = append(AllTables, currentTable)
+						tables = append(tables, currentTable)
 					} else {
 						foundTable = false
 					}
-					currentTable = Table{}
+					currentTable = models.Table{}
 					state = "IDLE"
 				}
 			}
@@ -201,27 +177,27 @@ func Read() {
 				// [0] Original line
 				// [1] Schema.
 				// [2] Table
-				cacheAlterTable = Table{
+				cacheAlterTable = models.Table{
 					Name:   matchAlterTable[2],
 					Schema: matchAlterTable[1],
 				}
 			}
 			if pkey := parsers.PKey(line); pkey != "" {
-				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
+				if objTable, exist := FindTable(tables, cacheAlterTable); exist {
 					(*objTable).PrimaryKey = pkey
 				} else {
-					currentTable = Table{
+					currentTable = models.Table{
 						Name:       cacheAlterTable.Name,
 						Schema:     cacheAlterTable.Schema,
 						PrimaryKey: pkey,
 					}
-					AllTables = append(AllTables, currentTable)
+					tables = append(tables, currentTable)
 				}
 				state = "IDLE"
 			}
 			if fkey := parsers.FKey(line); fkey != nil {
 				fkeys := []map[string]string{}
-				if objTable, exist := findTable(AllTables, cacheAlterTable); exist {
+				if objTable, exist := FindTable(tables, cacheAlterTable); exist {
 					fromName := (*objTable).Name
 					fromSchema := (*objTable).Schema
 					fkey["from"] = fromSchema + "." + fromName + "." + fkey["from"]
@@ -231,12 +207,12 @@ func Read() {
 						(*objTable).ForeignKey = append(fkeys, fkey)
 					}
 				} else {
-					currentTable = Table{
+					currentTable = models.Table{
 						Name:       cacheAlterTable.Name,
 						Schema:     cacheAlterTable.Schema,
 						ForeignKey: append(fkeys, fkey),
 					}
-					AllTables = append(AllTables, currentTable)
+					tables = append(tables, currentTable)
 				}
 				state = "IDLE"
 			}
@@ -247,18 +223,18 @@ func Read() {
 	// Save Cache
 
 	if Options.Cache {
-		err := os.MkdirAll(TmpCacheDir, os.ModePerm)
+		err := os.MkdirAll(tmpCacheDir, os.ModePerm)
 		if err != nil {
 			cli.ReturnError(err)
 		}
-		file, err := os.Create(TmpCacheFile)
+		file, err := os.Create(tmpCacheFile)
 		if err != nil {
 			cli.ReturnError(err)
 		}
 		defer file.Close()
 
 		encoder := json.NewEncoder(file)
-		if err := encoder.Encode(AllTables); err != nil {
+		if err := encoder.Encode(tables); err != nil {
 			cli.ReturnError(err)
 		}
 	}
@@ -274,173 +250,22 @@ func Export() {
 	}
 
 	if Options.Json || Options.JsonPretty {
-		var tablesToExport []Table
-		if cli.Filters.TableName != "" {
-			for _, table := range AllTables {
-				if table.Name == cli.Filters.TableName &&
-					table.Schema == schema {
-					tablesToExport = append(tablesToExport, table)
-				}
-			}
-		} else {
-			tablesToExport = AllTables
-		}
-
-		var output []byte
-		var err error
-
-		if len(tablesToExport) > 0 {
-			if Options.JsonPretty {
-				output, err = json.MarshalIndent(tablesToExport, "", "  ")
-			} else {
-				output, err = json.Marshal(tablesToExport)
-			}
-
-			if err != nil {
-				cli.ReturnError(err)
-			}
-
-			fmt.Println(string(output))
-		}
+		exporters.JSON(schema, tables, Options.JsonPretty)
 	}
 
 	if Options.Yaml {
-		var tablesToExport []Table
-		if cli.Filters.TableName != "" {
-			for _, table := range AllTables {
-				if table.Name == cli.Filters.TableName &&
-					table.Schema == schema {
-					tablesToExport = append(tablesToExport, table)
-				}
-			}
-		} else {
-			tablesToExport = AllTables
-		}
-
-		out, err := yaml.Marshal(tablesToExport)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-		fmt.Println(string(out))
+		exporters.YAML(schema, tables)
 	}
 
 	if Options.Html {
-		// Parse template
-		tmpl, err := template.New("index").Parse(templates.HTML)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-
-		// Create output file
-		outputFile, err := os.Create("index.html")
-		if err != nil {
-			cli.ReturnError(err)
-		}
-		defer outputFile.Close()
-
-		// Execute template with data
-		err = tmpl.Execute(outputFile, AllTables)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-
-		fmt.Printf("%s/index.html created!\n", cwd)
+		exporters.HTML(tables, rootPath)
 	}
 
 	if Options.Sqlite {
-		for _, table := range AllTables {
-			tableName := table.Name
-			columns := table.Columns
-			var data []map[string]string
-			if table.Data != nil {
-				data = table.Data
-			} else {
-				data = []map[string]string{}
-			}
-
-			for _, row := range data {
-				values := []string{}
-				for _, column := range columns {
-					if value, ok := row[column]; ok {
-						if value == "" {
-							values = append(values, "NULL")
-						} else if value == "\\N" {
-							values = append(values, "NULL")
-						} else {
-							values = append(values, fmt.Sprintf("'%s'", strings.ReplaceAll(value, "'", "''")))
-						}
-					} else {
-						values = append(values, "NULL")
-					}
-				}
-
-				insertStmt := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s);\n",
-					tableName,
-					strings.Join(columns, ", "),
-					strings.Join(values, ", "))
-
-				_, err := DBFile.WriteString(insertStmt)
-				if err != nil {
-					cli.ReturnError(err)
-				}
-
-			}
-
-		}
-
-		fmt.Printf("%s/%s created!\n", cwd, TmpSqliteFile)
-		fmt.Printf("Import it using: sqlite3 <db-name>.sqlite3 < <%s path>\n", TmpSqliteFile)
-
-		if DBFile != nil {
-			DBFile.Close()
-		}
+		exporters.SQLite(schema, tables, dbFile, rootPath, tmpSqliteFile)
 	}
 
 	if Options.Cli {
-		for _, table := range AllTables {
-			tableName := table.Name
-
-			// Filter table
-			if cli.Filters.TableName != "" &&
-				(table.Name != cli.Filters.TableName ||
-					table.Schema != schema) {
-				continue
-			}
-
-			columns := table.Columns
-			var data []map[string]string
-			if table.Data != nil {
-				data = table.Data
-			} else {
-				data = []map[string]string{}
-			}
-
-			// Filter columns
-			var selectedColumns []string
-			if len(cli.Filters.Columns) > 0 {
-				for _, col := range cli.Filters.Columns {
-					if contains(columns, col) {
-						selectedColumns = append(selectedColumns, col)
-					}
-				}
-			} else {
-				selectedColumns = columns
-			}
-
-			fmt.Printf("\nTable: %s\n\n", schema+"."+tableName)
-			w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
-
-			fmt.Fprintln(w, strings.Join(selectedColumns, "\t"))
-
-			for _, row := range data {
-				values := []string{}
-				for _, col := range selectedColumns {
-					values = append(values, row[col])
-				}
-				fmt.Fprintln(w, strings.Join(values, "\t"))
-			}
-
-			w.Flush()
-		}
+		exporters.CLI(schema, tables)
 	}
 }
