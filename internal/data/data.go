@@ -42,20 +42,23 @@ func GetMD5Hash(text string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func ReadCache() {
+func ReadCache() bool {
 	basename := GetMD5Hash(*Input)
 	tmpCacheFile = filepath.Join(tmpCacheDir, basename)
 
 	fileBytes, err := os.ReadFile(tmpCacheFile)
 	if err != nil {
 		// No cache found. Process and save one later.
+		return false
 	}
 
 	err = json.Unmarshal(fileBytes, &tables)
 	if err == nil {
 		// Cache loaded.
-		return
+		return true
 	}
+
+	return false
 }
 
 func SaveCache() {
@@ -77,7 +80,9 @@ func SaveCache() {
 
 func Read() {
 	if cli.Options.Cache {
-		ReadCache()
+		if ReadCache() {
+			return
+		}
 	}
 
 	// No cache found or requested
