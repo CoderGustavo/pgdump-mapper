@@ -2,6 +2,8 @@ package data
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -14,9 +16,9 @@ import (
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
+var Input *string
+
 var (
-	Input         *string
-	Options       models.Options
 	tables        []models.Table
 	dbFile        *os.File
 	tmpSqliteFile string = "pgdump-mapper.sqlite.txt"
@@ -35,22 +37,47 @@ func FindTable(tables []models.Table, targetTable models.Table) (*models.Table, 
 	return nil, false
 }
 
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
+}
+
+func ReadCache() {
+	basename := GetMD5Hash(*Input)
+	tmpCacheFile = filepath.Join(tmpCacheDir, basename)
+
+	fileBytes, err := os.ReadFile(tmpCacheFile)
+	if err != nil {
+		// No cache found. Process and save one later.
+	}
+
+	err = json.Unmarshal(fileBytes, &tables)
+	if err == nil {
+		// Cache loaded.
+		return
+	}
+}
+
+func SaveCache() {
+	err := os.MkdirAll(tmpCacheDir, os.ModePerm)
+	if err != nil {
+		cli.ReturnError(err)
+	}
+	file, err := os.Create(tmpCacheFile)
+	if err != nil {
+		cli.ReturnError(err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(tables); err != nil {
+		cli.ReturnError(err)
+	}
+}
+
 func Read() {
-
-	if Options.Cache {
-		basename := filepath.Base(*Input)
-		tmpCacheFile = filepath.Join(tmpCacheDir, basename)
-
-		fileBytes, err := os.ReadFile(tmpCacheFile)
-		if err != nil {
-			// No cache found. Process and save one later.
-		}
-
-		err = json.Unmarshal(fileBytes, &tables)
-		if err == nil {
-			// Cache loaded.
-			return
-		}
+	if cli.Options.Cache {
+		ReadCache()
 	}
 
 	// No cache found or requested
@@ -66,7 +93,7 @@ func Read() {
 		cacheAlterTable models.Table
 	)
 
-	if Options.Sqlite {
+	if cli.Options.Sqlite {
 		dbFile, err = os.Create(tmpSqliteFile)
 		if err != nil {
 			cli.ReturnError(err)
@@ -88,7 +115,7 @@ func Read() {
 			state = "ALTER-TABLE"
 		}
 
-		if Options.Sqlite && strings.HasPrefix(line, "CREATE TABLE") {
+		if cli.Options.Sqlite && strings.HasPrefix(line, "CREATE TABLE") {
 			state = "CREATE-TABLE"
 		}
 
@@ -220,23 +247,8 @@ func Read() {
 
 	}
 
-	// Save Cache
-
-	if Options.Cache {
-		err := os.MkdirAll(tmpCacheDir, os.ModePerm)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-		file, err := os.Create(tmpCacheFile)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-		defer file.Close()
-
-		encoder := json.NewEncoder(file)
-		if err := encoder.Encode(tables); err != nil {
-			cli.ReturnError(err)
-		}
+	if cli.Options.Cache {
+		SaveCache()
 	}
 }
 
@@ -249,23 +261,23 @@ func Export() {
 		schema = "public"
 	}
 
-	if Options.Json || Options.JsonPretty {
-		exporters.JSON(schema, tables, Options.JsonPretty)
+	if cli.Options.Json || cli.Options.JsonPretty {
+		exporters.JSON(schema, tables)
 	}
 
-	if Options.Yaml {
+	if cli.Options.Yaml {
 		exporters.YAML(schema, tables)
 	}
 
-	if Options.Html {
+	if cli.Options.Html {
 		exporters.HTML(tables, rootPath)
 	}
 
-	if Options.Sqlite {
+	if cli.Options.Sqlite {
 		exporters.SQLite(schema, tables, dbFile, rootPath, tmpSqliteFile)
 	}
 
-	if Options.Cli {
+	if cli.Options.Cli {
 		exporters.CLI(schema, tables)
 	}
 }

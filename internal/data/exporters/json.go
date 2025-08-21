@@ -8,7 +8,7 @@ import (
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
-func JSON(schema string, tables []models.Table, isJsonPretty bool) {
+func JSON(schema string, tables []models.Table) {
 	var tablesToExport []models.Table
 	if cli.Filters.TableName != "" {
 		for _, table := range tables {
@@ -25,7 +25,7 @@ func JSON(schema string, tables []models.Table, isJsonPretty bool) {
 	var err error
 
 	if len(tablesToExport) > 0 {
-		if isJsonPretty {
+		if cli.Options.JsonPretty {
 			output, err = json.MarshalIndent(tablesToExport, "", "  ")
 		} else {
 			output, err = json.Marshal(tablesToExport)

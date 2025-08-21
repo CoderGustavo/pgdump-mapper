@@ -79,7 +79,6 @@ func main() {
 	}
 
 	data.Input = &input
-	data.Options = opts
 
 	data.Read()
 	data.Export()
