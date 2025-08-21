@@ -2,6 +2,8 @@ package data
 
 import (
 	"bufio"
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -35,22 +37,47 @@ func FindTable(tables []models.Table, targetTable models.Table) (*models.Table, 
 	return nil, false
 }
 
+func GetMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
+}
+
+func ReadCache() {
+	basename := GetMD5Hash(*Input)
+	tmpCacheFile = filepath.Join(tmpCacheDir, basename)
+
+	fileBytes, err := os.ReadFile(tmpCacheFile)
+	if err != nil {
+		// No cache found. Process and save one later.
+	}
+
+	err = json.Unmarshal(fileBytes, &tables)
+	if err == nil {
+		// Cache loaded.
+		return
+	}
+}
+
+func SaveCache() {
+	err := os.MkdirAll(tmpCacheDir, os.ModePerm)
+	if err != nil {
+		cli.ReturnError(err)
+	}
+	file, err := os.Create(tmpCacheFile)
+	if err != nil {
+		cli.ReturnError(err)
+	}
+	defer file.Close()
+
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(tables); err != nil {
+		cli.ReturnError(err)
+	}
+}
+
 func Read() {
-
 	if cli.Options.Cache {
-		basename := filepath.Base(*Input)
-		tmpCacheFile = filepath.Join(tmpCacheDir, basename)
-
-		fileBytes, err := os.ReadFile(tmpCacheFile)
-		if err != nil {
-			// No cache found. Process and save one later.
-		}
-
-		err = json.Unmarshal(fileBytes, &tables)
-		if err == nil {
-			// Cache loaded.
-			return
-		}
+		ReadCache()
 	}
 
 	// No cache found or requested
@@ -220,23 +247,8 @@ func Read() {
 
 	}
 
-	// Save Cache
-
 	if cli.Options.Cache {
-		err := os.MkdirAll(tmpCacheDir, os.ModePerm)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-		file, err := os.Create(tmpCacheFile)
-		if err != nil {
-			cli.ReturnError(err)
-		}
-		defer file.Close()
-
-		encoder := json.NewEncoder(file)
-		if err := encoder.Encode(tables); err != nil {
-			cli.ReturnError(err)
-		}
+		SaveCache()
 	}
 }
 
