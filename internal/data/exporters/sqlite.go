@@ -9,7 +9,7 @@ import (
 	models "github.com/hedibertosilva/pgdump-mapper/models"
 )
 
-func SQLite(schema string, allTables []models.Table, dbFile *os.File, rootPath string, tmpSqliteFile string) {
+func SQLite(schema string, allTables []models.Table, dbFile *os.File, rootPath string, tmpSQLiteFile string) {
 	for _, table := range allTables {
 		tableName := table.Name
 		columns := table.Columns
@@ -50,8 +50,8 @@ func SQLite(schema string, allTables []models.Table, dbFile *os.File, rootPath s
 
 	}
 
-	fmt.Printf("%s/%s created!\n", rootPath, tmpSqliteFile)
-	fmt.Printf("Import it using: sqlite3 <db-name>.sqlite3 < <%s path>\n", tmpSqliteFile)
+	fmt.Printf("%s/%s created!\n", rootPath, tmpSQLiteFile)
+	fmt.Printf("Import it using: sqlite3 <db-name>.sqlite3 < <%s path>\n", tmpSQLiteFile)
 
 	if dbFile != nil {
 		dbFile.Close()

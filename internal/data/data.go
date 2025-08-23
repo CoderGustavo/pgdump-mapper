@@ -18,10 +18,13 @@ import (
 
 var Input *string
 
+const DEFAULT_SCHEMA = "public"
+
 var (
 	tables        []models.Table
 	dbFile        *os.File
-	tmpSqliteFile string = "pgdump-mapper.sqlite.txt"
+	schema        string
+	tmpSQLiteFile string = "pgdump-mapper.sqlite.txt"
 	tmpCacheDir   string = "/tmp/pgdump-mapper"
 	tmpCacheFile  string = ""
 	rootPath, _          = os.Getwd()
@@ -79,6 +82,12 @@ func SaveCache() {
 }
 
 func Read() {
+	if cli.Filters.Schema != "" {
+		schema = cli.Filters.Schema
+	} else {
+		schema = DEFAULT_SCHEMA
+	}
+
 	if cli.Options.Cache {
 		if ReadCache() {
 			return
@@ -93,17 +102,17 @@ func Read() {
 	}
 	defer file.Close()
 
-	var (
-		currentTable    models.Table
-		cacheAlterTable models.Table
-	)
-
-	if cli.Options.Sqlite {
-		dbFile, err = os.Create(tmpSqliteFile)
+	if cli.Options.SQLite {
+		dbFile, err = os.Create(tmpSQLiteFile)
 		if err != nil {
 			cli.ReturnError(err)
 		}
 	}
+
+	var (
+		currentTable    models.Table
+		cacheAlterTable models.Table
+	)
 
 	state := "IDLE"
 	foundTable := false
@@ -120,28 +129,30 @@ func Read() {
 			state = "ALTER-TABLE"
 		}
 
-		if cli.Options.Sqlite && strings.HasPrefix(line, "CREATE TABLE") {
-			state = "CREATE-TABLE"
-		}
-
-		if state == "CREATE-TABLE" {
-			tmpLine := strings.ReplaceAll(line, "public.", "") + "\n"
-			// Workaround for last column with comma
-			if strings.HasPrefix(line, "    CONSTRAINT") {
-				tmpLine = "    CONSTRAINT temp"
-			}
-			_, err := dbFile.WriteString(tmpLine)
-			if err != nil {
-				cli.ReturnError(err)
+		if cli.Options.SQLite {
+			if strings.HasPrefix(line, "CREATE TABLE") {
+				state = "CREATE-TABLE"
 			}
 
-			err = dbFile.Sync()
-			if err != nil {
-				cli.ReturnError(err)
-			}
+			if state == "CREATE-TABLE" {
+				tmpLine := strings.ReplaceAll(line, schema+".", "") + "\n"
+				// Workaround for last column with comma
+				if strings.HasPrefix(line, "    CONSTRAINT") {
+					tmpLine = "    CONSTRAINT temp"
+				}
+				_, err := dbFile.WriteString(tmpLine)
+				if err != nil {
+					cli.ReturnError(err)
+				}
 
-			if line == ");" {
-				state = "IDLE"
+				err = dbFile.Sync()
+				if err != nil {
+					cli.ReturnError(err)
+				}
+
+				if line == ");" {
+					state = "IDLE"
+				}
 			}
 		}
 
@@ -258,31 +269,23 @@ func Read() {
 }
 
 func Export() {
-
-	var schema string
-	if cli.Filters.Schema != "" {
-		schema = cli.Filters.Schema
-	} else {
-		schema = "public"
-	}
-
-	if cli.Options.Json || cli.Options.JsonPretty {
+	if cli.Options.JSON || cli.Options.JSONPretty {
 		exporters.JSON(schema, tables)
 	}
 
-	if cli.Options.Yaml {
+	if cli.Options.YAML {
 		exporters.YAML(schema, tables)
 	}
 
-	if cli.Options.Html {
+	if cli.Options.HTML {
 		exporters.HTML(tables, rootPath)
 	}
 
-	if cli.Options.Sqlite {
-		exporters.SQLite(schema, tables, dbFile, rootPath, tmpSqliteFile)
+	if cli.Options.SQLite {
+		exporters.SQLite(schema, tables, dbFile, rootPath, tmpSQLiteFile)
 	}
 
-	if cli.Options.Cli {
+	if cli.Options.CLI {
 		exporters.CLI(schema, tables)
 	}
 }

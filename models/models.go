@@ -2,12 +2,12 @@ package models
 
 type Options struct {
 	Help       bool
-	Json       bool
-	JsonPretty bool
-	Yaml       bool
-	Html       bool
-	Sqlite     bool
-	Cli        bool
+	JSON       bool
+	JSONPretty bool
+	YAML       bool
+	HTML       bool
+	SQLite     bool
+	CLI        bool
 	Cache      bool
 }
 
