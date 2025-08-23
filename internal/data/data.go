@@ -18,9 +18,12 @@ import (
 
 var Input *string
 
+const DEFAULT_SCHEMA = "public"
+
 var (
 	tables        []models.Table
 	dbFile        *os.File
+	schema        string
 	tmpSQLiteFile string = "pgdump-mapper.sqlite.txt"
 	tmpCacheDir   string = "/tmp/pgdump-mapper"
 	tmpCacheFile  string = ""
@@ -79,6 +82,12 @@ func SaveCache() {
 }
 
 func Read() {
+	if cli.Filters.Schema != "" {
+		schema = cli.Filters.Schema
+	} else {
+		schema = DEFAULT_SCHEMA
+	}
+
 	if cli.Options.Cache {
 		if ReadCache() {
 			return
@@ -93,17 +102,17 @@ func Read() {
 	}
 	defer file.Close()
 
-	var (
-		currentTable    models.Table
-		cacheAlterTable models.Table
-	)
-
 	if cli.Options.SQLite {
 		dbFile, err = os.Create(tmpSQLiteFile)
 		if err != nil {
 			cli.ReturnError(err)
 		}
 	}
+
+	var (
+		currentTable    models.Table
+		cacheAlterTable models.Table
+	)
 
 	state := "IDLE"
 	foundTable := false
@@ -126,7 +135,7 @@ func Read() {
 			}
 
 			if state == "CREATE-TABLE" {
-				tmpLine := strings.ReplaceAll(line, "public.", "") + "\n"
+				tmpLine := strings.ReplaceAll(line, schema+".", "") + "\n"
 				// Workaround for last column with comma
 				if strings.HasPrefix(line, "    CONSTRAINT") {
 					tmpLine = "    CONSTRAINT temp"
@@ -260,14 +269,6 @@ func Read() {
 }
 
 func Export() {
-
-	var schema string
-	if cli.Filters.Schema != "" {
-		schema = cli.Filters.Schema
-	} else {
-		schema = "public"
-	}
-
 	if cli.Options.Json || cli.Options.JsonPretty {
 		exporters.JSON(schema, tables)
 	}
