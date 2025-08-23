@@ -6,7 +6,7 @@ type Options struct {
 	JsonPretty bool
 	Yaml       bool
 	Html       bool
-	Sqlite     bool
+	SQLite     bool
 	Cli        bool
 	Cache      bool
 }

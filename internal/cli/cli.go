@@ -20,7 +20,7 @@ func HandleOptions(args []string) {
 		"--json-pretty": &Options.JsonPretty,
 		"--yaml":        &Options.Yaml,
 		"--html":        &Options.Html,
-		"--sqlite":      &Options.Sqlite,
+		"--sqlite":      &Options.SQLite,
 		"--cli":         &Options.Cli,
 		"--cache":       &Options.Cache,
 	}
