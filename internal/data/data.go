@@ -269,15 +269,15 @@ func Read() {
 }
 
 func Export() {
-	if cli.Options.Json || cli.Options.JsonPretty {
+	if cli.Options.JSON || cli.Options.JSONPretty {
 		exporters.JSON(schema, tables)
 	}
 
-	if cli.Options.Yaml {
+	if cli.Options.YAML {
 		exporters.YAML(schema, tables)
 	}
 
-	if cli.Options.Html {
+	if cli.Options.HTML {
 		exporters.HTML(tables, rootPath)
 	}
 
@@ -285,7 +285,7 @@ func Export() {
 		exporters.SQLite(schema, tables, dbFile, rootPath, tmpSQLiteFile)
 	}
 
-	if cli.Options.Cli {
+	if cli.Options.CLI {
 		exporters.CLI(schema, tables)
 	}
 }

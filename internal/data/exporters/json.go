@@ -25,7 +25,7 @@ func JSON(schema string, tables []models.Table) {
 	var err error
 
 	if len(tablesToExport) > 0 {
-		if cli.Options.JsonPretty {
+		if cli.Options.JSONPretty {
 			output, err = json.MarshalIndent(tablesToExport, "", "  ")
 		} else {
 			output, err = json.Marshal(tablesToExport)

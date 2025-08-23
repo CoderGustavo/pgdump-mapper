@@ -16,12 +16,12 @@ func HandleOptions(args []string) {
 	mapOptions := map[string]*bool{
 		"-h":            &Options.Help,
 		"--help":        &Options.Help,
-		"--json":        &Options.Json,
-		"--json-pretty": &Options.JsonPretty,
-		"--yaml":        &Options.Yaml,
-		"--html":        &Options.Html,
+		"--json":        &Options.JSON,
+		"--json-pretty": &Options.JSONPretty,
+		"--yaml":        &Options.YAML,
+		"--html":        &Options.HTML,
 		"--sqlite":      &Options.SQLite,
-		"--cli":         &Options.Cli,
+		"--cli":         &Options.CLI,
 		"--cache":       &Options.Cache,
 	}
 
@@ -53,7 +53,7 @@ func HandleOptions(args []string) {
 
 	// Set HTML as default
 	if !hasOptions {
-		Options.Html = true
+		Options.HTML = true
 	}
 }
 
